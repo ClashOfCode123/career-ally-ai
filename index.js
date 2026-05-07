@@ -21,12 +21,12 @@ app.get('/health', (req, res) => {
   res.json({ status: "Online", message: "Automata RCE Engine is ready! " });
 });
 
-// 3. The Submission Route (This is where the magic happens)
+
 app.post('/submit', async (req, res) => {
   try {
     const { userId, problemId, language, code } = req.body;
 
-    // Create a record in the database with "Pending" status
+    
     const submission = await Submission.create({
       userId,
       problemId,
