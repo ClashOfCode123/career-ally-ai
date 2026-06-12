@@ -1,33 +1,55 @@
 import mongoose from 'mongoose';
 
-const mockInterviewSchema = new mongoose.Schema({
-  // The exact UTC time they selected for the interview
-  timeSlot: { 
-    type: Date, 
-    required: true 
-  }, 
-  // State machine: Is it looking for a peer, matched, or expired?
-  status: { 
-    type: String, 
-    enum: ['waiting', 'matched', 'expired'], 
-    default: 'waiting' 
+const mockInterviewSchema = new mongoose.Schema(
+  {
+    // The exact UTC time selected for the interview
+    timeSlot: {
+      type: Date,
+      required: true,
+    },
+
+    // Interview lifecycle:
+    // waiting   = looking for peer
+    // matched   = peer found, room created
+    // completed = matched interview time has passed
+    // expired   = no peer found before scheduled time
+    status: {
+      type: String,
+      enum: ['waiting', 'matched', 'completed', 'expired'],
+      default: 'waiting',
+    },
+
+    // The person who requested the slot
+    userA: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+
+    // The person who matched with them
+    userB: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
+    // Unique WebRTC/interview room ID
+    roomId: {
+      type: String,
+    },
+
+    videoUrl: {
+      type: String,
+    },
+
+    completedAt: {
+      type: Date,
+    },
+
+    expiredAt: {
+      type: Date,
+    },
   },
-  // The person who requested the slot
-  userA: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
-  },
-  // The person who matched with them (populated later)
-  userB: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
-  },
-  // The unique URL ID for the WebRTC room (generated on match)
-  roomId: { 
-    type: String 
-  },
-  videoUrl: { type: String },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 export default mongoose.model('MockInterview', mockInterviewSchema);
