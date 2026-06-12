@@ -17,24 +17,29 @@ export default function InterviewRoom() {
   const [isDocOpen, setIsDocOpen] = useState(false);
 
   useEffect(() => {
-    const fetchInterview = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/api/interviews/room/${roomId}`, {
-          withCredentials: true 
-        });
-        
-        if (!response.ok) throw new Error("Room not found or unauthorized");
-        
-        const data = await response.json();
-        setInterview(data);
-        checkTime(data.timeSlot);
-      } catch (err) {
-        setError("Invalid, unauthorized, or expired meeting link.");
+  const fetchInterview = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/interviews/room/${roomId}`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Room not found or unauthorized");
       }
-    };
-    
-    fetchInterview();
-  }, [roomId]);
+
+      const data = await response.json();
+      setInterview(data);
+      checkTime(data.timeSlot);
+    } catch (err) {
+      setError("Invalid, unauthorized, or expired meeting link.");
+    }
+  };
+
+  fetchInterview();
+}, [roomId]);
 
   // Precise Countdown Engine
   const checkTime = (scheduledTime) => {

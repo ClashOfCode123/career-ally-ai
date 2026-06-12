@@ -34,11 +34,12 @@ export const startWorker = async () => {
             : problem.testCases;
 
           const result = await executeCode(
-            submission.code,
-            submission.language,
-            testCasesToRun,
-            problem.timeLimitMs
-          );
+  submission.code,
+  submission.language,
+  testCasesToRun,
+  problem.timeLimitMs,
+  problem.slug
+);
 
           submission.status = result.status;
           submission.executionTimeMs = result.executionTimeMs;

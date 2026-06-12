@@ -13,9 +13,9 @@ export default function CollaborativeDoc({ roomId }) {
   useEffect(() => {
     // Initialize secure socket connection to your backend server
     socketRef.current = io("http://localhost:3000", {
-      transports: ["websocket"],
-      secure: true
-    });
+  transports: ["websocket"],
+  withCredentials: true,
+});
 
     // 1. Join the designated private room for this interview session
     socketRef.current.emit("join-room", { roomId });
