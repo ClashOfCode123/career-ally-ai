@@ -1,6 +1,10 @@
-import cors from 'cors';
+
+import dns from "dns";
+dns.setServers(["1.1.1.1", "8.8.8.8"]);import cors from 'cors';
 import 'dotenv/config';
 import express from 'express';
+import http from "http";
+import { Server } from "socket.io";
 import cookieParser from 'cookie-parser';
 import { connectDB } from './src/config/db.js';
 import { connectRabbitMQ } from "./src/config/rabbitmq.js";
@@ -10,7 +14,71 @@ import { Submission } from './src/models/Submission.js';
 import authRoutes from './src/routes/authRoutes.js';
 import problemRoutes from './src/routes/problemRoutes.js';
 import interviewRoutes from './src/routes/interviewRoutes.js';
+import { startInterviewCleanupJob } from "./src/jobs/interviewCleanup.js";
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST"],
+  },
+});
+
+const roomDocuments = new Map();
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+
+  socket.on("join-room", ({ roomId }) => {
+    if (!roomId) return;
+
+    socket.join(roomId);
+
+    const currentDocument = roomDocuments.get(roomId) || "";
+    socket.emit("init-document", currentDocument);
+
+    const room = io.sockets.adapter.rooms.get(roomId);
+    const userCount = room ? room.size : 1;
+
+    io.to(roomId).emit("room-metrics", {
+      roomId,
+      userCount,
+    });
+
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
+  });
+
+  socket.on("document-change", ({ roomId, text }) => {
+    if (!roomId) return;
+
+    roomDocuments.set(roomId, text || "");
+
+    socket.to(roomId).emit("document-update", text || "");
+  });
+
+  socket.on("disconnecting", () => {
+    for (const roomId of socket.rooms) {
+      if (roomId === socket.id) continue;
+
+      setTimeout(() => {
+        const room = io.sockets.adapter.rooms.get(roomId);
+        const userCount = room ? room.size : 0;
+
+        io.to(roomId).emit("room-metrics", {
+          roomId,
+          userCount,
+        });
+      }, 0);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
+ 
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -55,7 +123,7 @@ app.get('/health', (req, res) => res.status(200).json({ status: "Engine running"
 const startServer = async () => {
   try {
     await connectDB();
-    
+    startInterviewCleanupJob();
     let retries = 5;
     while (retries > 0) {
       try {
@@ -70,8 +138,9 @@ const startServer = async () => {
     }
 
     startWorker();
-    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-  } catch (error) {
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});  } catch (error) {
     console.error("Initialization failed:", error);
     process.exit(1);
   }

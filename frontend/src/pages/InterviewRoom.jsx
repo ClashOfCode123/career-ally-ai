@@ -19,9 +19,12 @@ export default function InterviewRoom() {
   useEffect(() => {
     const fetchInterview = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/interviews/room/${roomId}`, {
-          withCredentials: true 
-        });
+        const response = await fetch(
+  `http://localhost:3000/api/interviews/room/${roomId}`,
+  {
+    credentials: "include",
+  }
+);
         
         if (!response.ok) throw new Error("Room not found or unauthorized");
         
