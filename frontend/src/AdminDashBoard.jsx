@@ -40,15 +40,17 @@ export default function AdminDashboard({ user, onBack }) {
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    title: "",
-    slug: "",
-    description: "",
-    difficulty: "Easy",
-    timeLimitMs: 2000,
-    memoryLimitKb: 256000,
-    starterCodeJSON: JSON.stringify(EMPTY_STARTER_CODE, null, 2),
-    testCasesJSON: JSON.stringify(EMPTY_TEST_CASES, null, 2),
-  });
+  title: "",
+  slug: "",
+  description: "",
+  difficulty: "Easy",
+  visibility: "public",
+  timeLimitMs: 2000,
+  memoryLimitKb: 256000,
+  starterCodeJSON: JSON.stringify(EMPTY_STARTER_CODE, null, 2),
+  testCasesJSON: JSON.stringify(EMPTY_TEST_CASES, null, 2),
+});
+
 
   const fetchProblems = async () => {
     try {
@@ -77,16 +79,17 @@ export default function AdminDashboard({ user, onBack }) {
   }, []);
 
   const resetForm = () => {
-    setFormData({
-      title: "",
-      slug: "",
-      description: "",
-      difficulty: "Easy",
-      timeLimitMs: 2000,
-      memoryLimitKb: 256000,
-      starterCodeJSON: JSON.stringify(EMPTY_STARTER_CODE, null, 2),
-      testCasesJSON: JSON.stringify(EMPTY_TEST_CASES, null, 2),
-    });
+   setFormData({
+  title: "",
+  slug: "",
+  description: "",
+  difficulty: "Easy",
+  visibility: "public",
+  timeLimitMs: 2000,
+  memoryLimitKb: 256000,
+  starterCodeJSON: JSON.stringify(EMPTY_STARTER_CODE, null, 2),
+  testCasesJSON: JSON.stringify(EMPTY_TEST_CASES, null, 2),
+});
 
     setCurrentProblem(null);
   };
@@ -98,23 +101,24 @@ export default function AdminDashboard({ user, onBack }) {
 
   const handleEdit = (problem) => {
     setFormData({
-      title: problem.title || "",
-      slug: problem.slug || "",
-      description: problem.description || "",
-      difficulty: problem.difficulty || "Easy",
-      timeLimitMs: problem.timeLimitMs || 2000,
-      memoryLimitKb: problem.memoryLimitKb || 256000,
-      starterCodeJSON: JSON.stringify(
-        problem.starterCode || EMPTY_STARTER_CODE,
-        null,
-        2
-      ),
-      testCasesJSON: JSON.stringify(
-        problem.testCases || EMPTY_TEST_CASES,
-        null,
-        2
-      ),
-    });
+  title: problem.title || "",
+  slug: problem.slug || "",
+  description: problem.description || "",
+  difficulty: problem.difficulty || "Easy",
+  visibility: problem.visibility || "public",
+  timeLimitMs: problem.timeLimitMs || 2000,
+  memoryLimitKb: problem.memoryLimitKb || 256000,
+  starterCodeJSON: JSON.stringify(
+    problem.starterCode || EMPTY_STARTER_CODE,
+    null,
+    2
+  ),
+  testCasesJSON: JSON.stringify(
+    problem.testCases || EMPTY_TEST_CASES,
+    null,
+    2
+  ),
+});
 
     setCurrentProblem(problem);
     setIsEditing(true);
@@ -198,15 +202,16 @@ export default function AdminDashboard({ user, onBack }) {
       setError("");
 
       const payload = {
-        title: formData.title.trim(),
-        slug: formData.slug.trim(),
-        description: formData.description,
-        difficulty: formData.difficulty,
-        timeLimitMs: Number(formData.timeLimitMs),
-        memoryLimitKb: Number(formData.memoryLimitKb),
-        starterCode: parsedStarterCode,
-        testCases: parsedTestCases,
-      };
+  title: formData.title.trim(),
+  slug: formData.slug.trim(),
+  description: formData.description,
+  difficulty: formData.difficulty,
+  visibility: formData.visibility,
+  timeLimitMs: Number(formData.timeLimitMs),
+  memoryLimitKb: Number(formData.memoryLimitKb),
+  starterCode: parsedStarterCode,
+  testCases: parsedTestCases,
+};
 
       if (!payload.title || !payload.slug || !payload.description) {
         alert("Title, slug, and description are required.");
@@ -443,7 +448,7 @@ export default function AdminDashboard({ user, onBack }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-mono text-gray-500 uppercase tracking-widest">
                       Difficulty
@@ -463,6 +468,31 @@ export default function AdminDashboard({ user, onBack }) {
                       <option value="Hard">Hard</option>
                     </select>
                   </div>
+
+                  <div className="space-y-2">
+  <label className="text-xs font-mono text-gray-500 uppercase tracking-widest">
+    Visibility
+  </label>
+
+  <select
+    value={formData.visibility}
+    onChange={(e) =>
+      setFormData({
+        ...formData,
+        visibility: e.target.value,
+      })
+    }
+    className="w-full bg-[#050505] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-cyan-500/50 font-mono text-sm"
+  >
+    <option value="public">Public Practice</option>
+    <option value="contest">Contest Only</option>
+    <option value="private">Private Draft</option>
+  </select>
+
+  <p className="text-[10px] text-gray-600 font-mono">
+    Public appears on user dashboard. Contest/private stays hidden.
+  </p>
+</div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-mono text-gray-500 uppercase tracking-widest">

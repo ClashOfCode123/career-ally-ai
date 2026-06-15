@@ -2,6 +2,7 @@ import amqp from "amqplib";
 import { Submission } from "../models/Submission.js";
 import { Problem } from "../models/Problem.js";
 import { executeCode } from "../services/executeCode.js";
+import { refreshUserContestStanding } from "../services/contestLeaderboardService.js";
 
 export const startWorker = async () => {
   try {
@@ -20,11 +21,16 @@ export const startWorker = async () => {
 
         try {
           const submission = await Submission.findById(submissionId);
-          const problem = await Problem.findById(submission.problemId);
 
-          if (!submission || !problem) {
-            return channel.ack(msg);
-          }
+if (!submission) {
+  return channel.ack(msg);
+}
+
+const problem = await Problem.findById(submission.problemId);
+
+if (!problem) {
+  return channel.ack(msg);
+}
 
           submission.status = "Processing";
           await submission.save();
@@ -45,6 +51,14 @@ export const startWorker = async () => {
           submission.memoryUsedKb = result.memoryUsedKb;
           submission.outputLogs = result.outputLogs;
           await submission.save();
+
+          if (
+  submission.isContestSubmission &&
+  submission.contestId &&
+  submission.action === "submit"
+) {
+  await refreshUserContestStanding(submission.contestId, submission.userId);
+}
 
           console.log(`[✔] Finalized Submission ${submissionId}: ${result.status}`);
           channel.ack(msg);

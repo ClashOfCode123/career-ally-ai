@@ -16,7 +16,12 @@ const problemSchema = new mongoose.Schema({
     input: { type: String, required: true },
     expectedOutput: { type: String, required: true },
     isHidden: { type: Boolean, default: true } 
-  }]
+  }],
+  visibility: {
+  type: String,
+  enum: ["public", "contest", "private"],
+  default: "public",
+}
 }, { timestamps: true });
 
 export const Problem = mongoose.models.Problem || mongoose.model('Problem', problemSchema);

@@ -27,6 +27,7 @@ import Login from "./Login";
 import Register from "./Register";
 import AdminDashboard from "./AdminDashboard";
 import InterviewRoom from "./pages/InterviewRoom";
+import AdminContestManager from "./AdminContestManager";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -38,7 +39,10 @@ export default function App() {
   const [problems, setProblems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdminView, setIsAdminView] = useState(false);
-
+  const [isContestView, setIsContestView] = useState(false);
+  const [contestWorkspace, setContestWorkspace] = useState(null);
+  const [adminSection, setAdminSection] = useState("problems");
+  
   useEffect(() => {
     const storedUser = localStorage.getItem("automata_user");
 
@@ -169,31 +173,81 @@ export default function App() {
                         onRegister={handleAuthSuccess}
                       />
                     )
-                  ) : isAdminView ? (
-                    <AdminDashboard
-                      key="admin"
-                      user={user}
-                      onBack={() => setIsAdminView(false)}
-                    />
-                  ) : !selectedProblemId ? (
-                    <Dashboard
-                      key="dashboard"
-                      onSelect={(id) => setSelectedProblemId(id)}
-                      problems={problems}
-                      isLoading={isLoading}
-                      user={user}
-                      onLogout={handleLogout}
-                      onToggleAdmin={() => setIsAdminView(true)}
-                      onBookInterview={handleBookInterview}
-                    />
-                  ) : (
-                    <Workspace
-                      key="workspace"
-                      problemId={selectedProblemId}
-                      onBack={() => setSelectedProblemId(null)}
-                      user={user}
-                    />
-                  )}
+                 ) : contestWorkspace ? (
+  <Workspace
+    key="contest-workspace"
+    problemId={contestWorkspace.problemId}
+    contestId={contestWorkspace.contestId}
+    onBack={() => setContestWorkspace(null)}
+    user={user}
+  />
+) : isContestView ? (
+  <ContestHub
+    key="contest-hub"
+    onBack={() => setIsContestView(false)}
+    onSolve={(contestId, problemId) =>
+      setContestWorkspace({ contestId, problemId })
+    }
+  />
+) : isAdminView ? (
+  <div key="admin-panel" className="relative">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex gap-2 bg-black/80 border border-white/10 rounded-xl p-2 backdrop-blur-xl">
+      <button
+        onClick={() => setAdminSection("problems")}
+        className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+          adminSection === "problems"
+            ? "bg-cyan-500 text-black"
+            : "bg-white/5 text-gray-400 hover:text-white"
+        }`}
+      >
+        QUESTIONS
+      </button>
+
+      <button
+        onClick={() => setAdminSection("contests")}
+        className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+          adminSection === "contests"
+            ? "bg-amber-500 text-black"
+            : "bg-white/5 text-gray-400 hover:text-white"
+        }`}
+      >
+        CONTESTS
+      </button>
+    </div>
+
+    {adminSection === "problems" ? (
+      <AdminDashboard
+        user={user}
+        onBack={() => setIsAdminView(false)}
+      />
+    ) : (
+      <AdminContestManager
+        onBack={() => setIsAdminView(false)}
+      />
+    )}
+  </div>
+) : !selectedProblemId ? (
+  <Dashboard
+    key="dashboard"
+    onSelect={(id) => setSelectedProblemId(id)}
+    problems={problems}
+    isLoading={isLoading}
+    user={user}
+    onLogout={handleLogout}
+onToggleAdmin={() => {
+  setAdminSection("problems");
+  setIsAdminView(true);
+}}    onBookInterview={handleBookInterview}
+    onOpenContests={() => setIsContestView(true)}
+  />
+) : (
+  <Workspace
+    key="workspace"
+    problemId={selectedProblemId}
+    onBack={() => setSelectedProblemId(null)}
+    user={user}
+  />
+)}
                 </AnimatePresence>
               }
             />
@@ -395,6 +449,7 @@ function Dashboard({
   onLogout,
   onToggleAdmin,
   onBookInterview,
+  onOpenContests,
 }) {
   const [isScheduling, setIsScheduling] = useState(false);
 
@@ -471,6 +526,14 @@ function Dashboard({
                 <span>ADMIN OVERRIDE</span>
               </button>
             )}
+
+            <button
+  onClick={onOpenContests}
+  className="flex items-center space-x-2 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20"
+>
+  <Trophy size={14} />
+  <span>CONTESTS</span>
+</button>
 
             <button
               onClick={onLogout}
@@ -585,8 +648,7 @@ function Dashboard({
   );
 }
 
-function Workspace({ problemId, onBack, user }) {
-  const [problem, setProblem] = useState(null);
+function Workspace({ problemId, onBack, user, contestId = null }) {  const [problem, setProblem] = useState(null);
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
   const [status, setStatus] = useState("idle");
@@ -598,10 +660,14 @@ function Workspace({ problemId, onBack, user }) {
   useEffect(() => {
     setProblem(null);
 
-    axios
-      .get(`${API_BASE_URL}/api/problems/${problemId}`, {
-        withCredentials: true,
-      })
+  const problemUrl = contestId
+  ? `${API_BASE_URL}/api/contests/${contestId}/problems/${problemId}`
+  : `${API_BASE_URL}/api/problems/${problemId}`;
+
+axios
+  .get(problemUrl, {
+    withCredentials: true,
+  })
       .then((res) => {
         setProblem(res.data);
         setCode(res.data.starterCode?.[language] || "");
@@ -609,7 +675,7 @@ function Workspace({ problemId, onBack, user }) {
       .catch((err) => {
         console.error("Failed to fetch problem:", err);
       });
-  }, [problemId]);
+  }, [problemId,contestId]);
 
   useEffect(() => {
     if (problem) {
@@ -627,16 +693,16 @@ function Workspace({ problemId, onBack, user }) {
 
     try {
       const res = await axios.post(
-        `${API_BASE_URL}/api/submit`,
-        {
-          userId: user._id,
-          problemId: problem._id,
-          language,
-          code,
-          action: actionType,
-        },
-        { withCredentials: true }
-      );
+  `${API_BASE_URL}/api/submit`,
+  {
+    problemId: problem._id,
+    language,
+    code,
+    action: actionType,
+    contestId: contestId || null,
+  },
+  { withCredentials: true }
+);
 
       const subId = res.data.submissionId;
 
@@ -1031,6 +1097,298 @@ function Workspace({ problemId, onBack, user }) {
           </AnimatePresence>
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+function ContestHub({ onBack, onSolve }) {
+  const [contests, setContests] = useState([]);
+  const [selectedContest, setSelectedContest] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchContests = async () => {
+    try {
+      setIsLoading(true);
+
+      const res = await axios.get(`${API_BASE_URL}/api/contests`, {
+        withCredentials: true,
+      });
+
+      setContests(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to load contests.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchContestDetails = async (contestId) => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/contests/${contestId}`, {
+        withCredentials: true,
+      });
+
+      setSelectedContest(res.data);
+
+      const leaderboardRes = await axios.get(
+        `${API_BASE_URL}/api/contests/${contestId}/leaderboard`,
+        { withCredentials: true }
+      );
+
+      setLeaderboard(
+        Array.isArray(leaderboardRes.data) ? leaderboardRes.data : []
+      );
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to load contest.");
+    }
+  };
+
+  const joinContest = async (contestId) => {
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/contests/${contestId}/join`,
+        {},
+        { withCredentials: true }
+      );
+
+      await fetchContestDetails(contestId);
+      await fetchContests();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to join contest.");
+    }
+  };
+
+  useEffect(() => {
+    fetchContests();
+  }, []);
+
+  if (selectedContest) {
+    const canSolve =
+      selectedContest.status === "running" && selectedContest.joined === true;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="max-w-6xl mx-auto p-8 h-[calc(100vh-48px)] overflow-y-auto custom-scrollbar"
+      >
+        <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/5">
+          <div>
+            <button
+              onClick={() => setSelectedContest(null)}
+              className="mb-4 flex items-center space-x-2 text-gray-400 hover:text-white text-sm"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to contests</span>
+            </button>
+
+            <h1 className="text-3xl font-black text-white">
+              {selectedContest.title}
+            </h1>
+
+            <p className="text-gray-400 mt-2">
+              Status:{" "}
+              <span className="text-emerald-400 font-mono">
+                {selectedContest.status}
+              </span>
+            </p>
+
+            {selectedContest.description && (
+              <p className="text-gray-500 mt-3 max-w-2xl">
+                {selectedContest.description}
+              </p>
+            )}
+          </div>
+
+          {!selectedContest.joined && selectedContest.status !== "ended" && (
+            <button
+              onClick={() => joinContest(selectedContest._id)}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-black font-bold"
+            >
+              Join Contest
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            <h2 className="text-xl font-bold mb-4 text-white">Problems</h2>
+
+            <div className="space-y-4">
+              {selectedContest.problems?.map((item) => (
+                <div
+                  key={item.problem._id}
+                  className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between"
+                >
+                  <div>
+                    <div className="text-xs font-mono text-amber-400 mb-1">
+                      Problem {item.index} · {item.points} points
+                    </div>
+
+                    <h3 className="text-white font-bold">
+                      {item.problem.title}
+                    </h3>
+
+                    <p className="text-xs text-gray-500 mt-1">
+                      {item.problem.difficulty}
+                    </p>
+                  </div>
+
+                  <button
+                    disabled={!canSolve}
+                    onClick={() =>
+                      onSolve(selectedContest._id, item.problem._id)
+                    }
+                    className="px-4 py-2 rounded-xl bg-emerald-500 text-black font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Solve
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {selectedContest.status === "upcoming" && (
+              <p className="text-sm text-gray-500 mt-4">
+                Problems unlock when the contest starts.
+              </p>
+            )}
+
+            {selectedContest.status === "running" && !selectedContest.joined && (
+              <p className="text-sm text-amber-400 mt-4">
+                Join the contest to solve problems.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold mb-4 text-white">Leaderboard</h2>
+
+            <div className="overflow-hidden rounded-2xl border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.05] text-gray-400 font-mono text-xs">
+                  <tr>
+                    <th className="text-left p-3">Rank</th>
+                    <th className="text-left p-3">User</th>
+                    <th className="text-left p-3">Score</th>
+                    <th className="text-left p-3">Solved</th>
+                    <th className="text-left p-3">Penalty</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {leaderboard.map((row, index) => (
+                    <tr
+                      key={row.user._id}
+                      className="border-t border-white/5 text-gray-300"
+                    >
+                      <td className="p-3 font-mono">#{index + 1}</td>
+                      <td className="p-3">{row.user.username}</td>
+                      <td className="p-3 text-emerald-400 font-bold">
+                        {row.totalScore}
+                      </td>
+                      <td className="p-3">{row.solvedCount}</td>
+                      <td className="p-3">{row.totalPenalty}</td>
+                    </tr>
+                  ))}
+
+                  {leaderboard.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="p-6 text-center text-gray-500 font-mono"
+                      >
+                        No participants yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              onClick={() => fetchContestDetails(selectedContest._id)}
+              className="mt-4 w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-mono text-xs"
+            >
+              Refresh Leaderboard
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-6xl mx-auto p-8 h-[calc(100vh-48px)] overflow-y-auto custom-scrollbar"
+    >
+      <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/5">
+        <div>
+          <button
+            onClick={onBack}
+            className="mb-4 flex items-center space-x-2 text-gray-400 hover:text-white text-sm"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to dashboard</span>
+          </button>
+
+          <h1 className="text-4xl font-black text-white">Contest Arena</h1>
+
+          <p className="text-gray-400 mt-2">
+            Join live contests and compete on the leaderboard.
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="text-emerald-400 font-mono animate-pulse">
+          Loading contests...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {contests.map((contest) => (
+            <div
+              key={contest._id}
+              className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-amber-500/30 transition-all"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-white">
+                  {contest.title}
+                </h2>
+
+                <span
+                  className={`text-xs font-mono px-3 py-1 rounded-full ${
+                    contest.status === "running"
+                      ? "bg-emerald-500/10 text-emerald-400"
+                      : contest.status === "upcoming"
+                      ? "bg-amber-500/10 text-amber-400"
+                      : "bg-gray-500/10 text-gray-400"
+                  }`}
+                >
+                  {contest.status}
+                </span>
+              </div>
+
+              <p className="text-sm text-gray-500 mb-4">
+                Participants: {contest.participantCount}
+              </p>
+
+              <button
+                onClick={() => fetchContestDetails(contest._id)}
+                className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-mono text-sm"
+              >
+                View Contest
+              </button>
+            </div>
+          ))}
+
+          {contests.length === 0 && (
+            <div className="text-gray-500 font-mono">No contests found.</div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }
