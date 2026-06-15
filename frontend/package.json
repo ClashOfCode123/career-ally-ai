@@ -8,8 +8,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@daily-co/daily-js": "^0.91.0",
     "@monaco-editor/react": "^4.7.0",
+    "@zegocloud/zego-uikit-prebuilt": "^2.17.3",
     "axios": "^1.16.1",
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.300.0",

@@ -1,58 +1,31 @@
 import MockInterview from '../models/MockInterview.js';
 import { v4 as uuidv4 } from 'uuid';
-import { sendInviteEmail } from '../services/emailService.js'; // Added import
+import { sendInviteEmail } from '../services/emailService.js';
 
 export const bookInterview = async (req, res) => {
   try {
     const { timeSlot } = req.body; 
-    const userId = req.user._id; // Extracted from your authMiddleware
+    const userId = req.user._id;
 
-    // 1. ATOMIC OPERATION: Find someone waiting for this exact time
     const match = await MockInterview.findOneAndUpdate(
       {
         timeSlot: new Date(timeSlot),
         status: 'waiting',
-        userA: { $ne: userId } // Prevent matching with yourself
+        userA: { $ne: userId } 
       },
       {
         $set: {
           status: 'matched',
           userB: userId,
-          roomId: uuidv4() // Generate the secure room link instantly
+          roomId: uuidv4() 
         }
       },
-      { new: true } // Return the updated document
-    ).populate('userA', 'email username'); // Populate User A's info for the email step later
+      { new: true }
+    ).populate('userA', 'email username');
 
     if (match) {
-      // --- BRANCH A: A peer was waiting! We have a match. ---
       console.log(`[MATCH FOUND] Room ID: ${match.roomId} created for User ${match.userA._id} and User ${userId}`);
       
-      // 2. Generate the Daily.co Video Room
-      try {
-        const dailyRes = await fetch('https://api.daily.co/v1/rooms', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.DAILY_API_KEY}`
-          },
-          body: JSON.stringify({
-            properties: {
-              exp: Math.floor(Date.now() / 1000) + 86400 // Room expires in 24 hours
-            }
-          })
-        });
-        
-        const dailyData = await dailyRes.json();
-        
-        // Save the Daily video URL to the database document
-        match.videoUrl = dailyData.url; 
-        await match.save();
-      } catch (dailyError) {
-        console.error("Failed to create Daily.co room:", dailyError);
-      }
-
-      // 3. Fire the Email Invites (Don't await it, let it run asynchronously)
       sendInviteEmail(
         match.userA.email,
         req.user.email,
@@ -67,7 +40,6 @@ export const bookInterview = async (req, res) => {
       });
     }
 
-    // --- BRANCH B: Nobody is waiting. Create a new slot. ---
     const newInterview = await MockInterview.create({
       timeSlot: new Date(timeSlot),
       userA: userId,
@@ -86,12 +58,11 @@ export const bookInterview = async (req, res) => {
     res.status(500).json({ error: "Internal server error while booking interview." });
   }
 };
-// Add this below your existing bookInterview function
+
 export const getInterviewRoom = async (req, res) => {
   try {
     const { roomId } = req.params;
     
-    // Find the interview by its UUID
     const interview = await MockInterview.findOne({ roomId })
       .populate('userA', 'username')
       .populate('userB', 'username');

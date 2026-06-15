@@ -7,24 +7,20 @@ import CollaborativeDoc from "../components/CollaborativeDoc";
 export default function InterviewRoom() {
   const { roomId } = useParams();
   const [interview, setInterview] = useState(null);
-  
-  // Timing & State
   const [isTooEarly, setIsTooEarly] = useState(true);
   const [timeLeft, setTimeLeft] = useState("");
   const [error, setError] = useState("");
-  
-  // Layout State: false = 100% Video, true = 50% Doc / 50% Video
   const [isDocOpen, setIsDocOpen] = useState(false);
 
   useEffect(() => {
     const fetchInterview = async () => {
       try {
         const response = await fetch(
-  `http://localhost:3000/api/interviews/room/${roomId}`,
-  {
-    credentials: "include",
-  }
-);
+          `http://localhost:3000/api/interviews/room/${roomId}`,
+          {
+            credentials: "include",
+          }
+        );
         
         if (!response.ok) throw new Error("Room not found or unauthorized");
         
@@ -39,7 +35,6 @@ export default function InterviewRoom() {
     fetchInterview();
   }, [roomId]);
 
-  // Precise Countdown Engine
   const checkTime = (scheduledTime) => {
     const interviewTime = new Date(scheduledTime).getTime();
     
@@ -47,19 +42,16 @@ export default function InterviewRoom() {
       const now = new Date().getTime();
       const difference = interviewTime - now;
 
-      // Unlock the room exactly 5 minutes (300,000 ms) before start
       if (difference <= 300000) {
         setIsTooEarly(false);
         clearInterval(timer);
       } else {
         setIsTooEarly(true);
         
-        // Calculate Hours, Minutes, Seconds elegantly
         const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((difference % (1000 * 60)) / 1000);
         
-        // Format to HH:MM:SS
         const formattedTime = 
           (hours > 0 ? `${hours.toString().padStart(2, '0')}:` : "") +
           `${minutes.toString().padStart(2, '0')}:` +
@@ -72,7 +64,6 @@ export default function InterviewRoom() {
     return () => clearInterval(timer);
   };
 
-  // 1. ERROR STATE
   if (error) {
     return (
       <div className="h-screen w-full bg-[#050505] flex items-center justify-center">
@@ -85,7 +76,6 @@ export default function InterviewRoom() {
     );
   }
 
-  // 2. LOADING STATE
   if (!interview) {
     return (
       <div className="h-screen w-full bg-[#050505] flex items-center justify-center flex-col space-y-4">
@@ -95,11 +85,9 @@ export default function InterviewRoom() {
     );
   }
 
-  // 3. THE PROFESSIONAL WAITING LOBBY
   if (isTooEarly) {
     return (
       <div className="h-screen w-full bg-[#050505] flex items-center justify-center relative overflow-hidden">
-        {/* Subtle background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none"></div>
         
         <div className="bg-[#0a0a0a]/80 border border-white/10 p-10 rounded-3xl max-w-lg w-full text-center shadow-2xl backdrop-blur-2xl relative z-10">
@@ -130,11 +118,8 @@ export default function InterviewRoom() {
     );
   }
 
-  // 4. THE LIVE INTERVIEW ARENA (Dynamic Split Screen)
   return (
     <div className="h-screen w-full bg-[#050505] flex flex-col overflow-hidden">
-      
-      {/* Top Control Header */}
       <div className="h-16 border-b border-white/10 bg-[#0a0a0a] flex items-center justify-between px-6 z-20 shadow-md">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
@@ -146,7 +131,6 @@ export default function InterviewRoom() {
           </span>
         </div>
         
-        {/* Dynamic Layout Toggle Button */}
         <button 
           onClick={() => setIsDocOpen(!isDocOpen)}
           className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${
@@ -160,31 +144,24 @@ export default function InterviewRoom() {
         </button>
       </div>
 
-      {/* Dynamic Arena Container */}
       <div className="flex-1 flex w-full relative transition-all duration-700 ease-in-out bg-black/50">
-        
-        {/* Left Half: The Code Editor (Slides in/out) */}
         <div 
           className={`h-full transition-all duration-700 ease-in-out overflow-hidden flex flex-col ${
-            isDocOpen ? "w-1/2 opacity-100 border-r border-white/10" : "w-0 opacity-0 border-r-0"
+            isDocOpen ? "w-3/4 opacity-100 border-r border-white/10" : "w-0 opacity-0 border-r-0"
           }`}
         >
-          <div className="flex-1 min-w-[50vw]"> 
-            {/* The min-w forces the component inside to stay full size even while sliding, preventing ugly text wrapping during animation */}
+          <div className="flex-1 min-w-[75vw]"> 
             {isDocOpen && <CollaborativeDoc roomId={roomId} />}
           </div>
         </div>
 
-        {/* Right Half: The Video Wall (Expands/Contracts) */}
         <div 
           className={`h-full transition-all duration-700 ease-in-out relative ${
-            isDocOpen ? "w-1/2" : "w-full"
+            isDocOpen ? "w-1/4" : "w-full"
           }`}
         >
-          {/* Daily.co handles the stacking natively inside this div */}
-          <VideoContainer videoUrl={interview.videoUrl} /> 
+          <VideoContainer roomId={roomId} /> 
         </div>
-
       </div>
     </div>
   );
