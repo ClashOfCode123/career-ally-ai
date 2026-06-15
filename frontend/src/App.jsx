@@ -1101,11 +1101,93 @@ axios
   );
 }
 
+const formatDuration = (startTime, endTime) => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "N/A";
+  }
+
+  const totalMs = Math.max(0, end - start);
+  const totalMinutes = Math.floor(totalMs / 60000);
+
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts = [];
+
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+
+  return parts.length ? parts.join(" ") : "Less than 1m";
+};
+
+const formatCountdown = (targetTime, now) => {
+  const target = new Date(targetTime);
+
+  if (Number.isNaN(target.getTime())) {
+    return "N/A";
+  }
+
+  const totalSeconds = Math.max(0, Math.floor((target - now) / 1000));
+
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
+};
+
+const getLiveContestStatus = (contest, now) => {
+  const start = new Date(contest.startTime);
+  const end = new Date(contest.endTime);
+
+  if (now < start) return "upcoming";
+  if (now > end) return "ended";
+
+  return "running";
+};
+
+const getContestTimeLabel = (contest, now) => {
+  const liveStatus = getLiveContestStatus(contest, now);
+
+  if (liveStatus === "upcoming") {
+    return {
+      label: "Starts in",
+      value: formatCountdown(contest.startTime, now),
+    };
+  }
+
+  if (liveStatus === "running") {
+    return {
+      label: "Ends in",
+      value: formatCountdown(contest.endTime, now),
+    };
+  }
+
+  return {
+    label: "Status",
+    value: "Contest ended",
+  };
+};
+
 function ContestHub({ onBack, onSolve }) {
   const [contests, setContests] = useState([]);
   const [selectedContest, setSelectedContest] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [now, setNow] = useState(new Date());
 
   const fetchContests = async () => {
     try {
@@ -1163,9 +1245,20 @@ function ContestHub({ onBack, onSolve }) {
     fetchContests();
   }, []);
 
+  useEffect(() => {
+  const timer = setInterval(() => {
+    setNow(new Date());
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, []);
+
   if (selectedContest) {
-    const canSolve =
-      selectedContest.status === "running" && selectedContest.joined === true;
+    const liveStatus = getLiveContestStatus(selectedContest, now);
+const timeInfo = getContestTimeLabel(selectedContest, now);
+
+const canSolve =
+  liveStatus === "running" && selectedContest.joined === true;
 
     return (
       <motion.div
@@ -1187,12 +1280,34 @@ function ContestHub({ onBack, onSolve }) {
               {selectedContest.title}
             </h1>
 
-            <p className="text-gray-400 mt-2">
-              Status:{" "}
-              <span className="text-emerald-400 font-mono">
-                {selectedContest.status}
-              </span>
-            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+  <div className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/10">
+    <div className="text-[10px] uppercase tracking-widest font-mono text-gray-500">
+      Status
+    </div>
+    <div className="text-emerald-400 font-mono font-bold uppercase">
+      {liveStatus}
+    </div>
+  </div>
+
+  <div className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/10">
+    <div className="text-[10px] uppercase tracking-widest font-mono text-gray-500">
+      Duration
+    </div>
+    <div className="text-white font-mono font-bold">
+      {formatDuration(selectedContest.startTime, selectedContest.endTime)}
+    </div>
+  </div>
+
+  <div className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+    <div className="text-[10px] uppercase tracking-widest font-mono text-amber-500/70">
+      {timeInfo.label}
+    </div>
+    <div className="text-amber-400 font-mono font-black">
+      {timeInfo.value}
+    </div>
+  </div>
+</div>
 
             {selectedContest.description && (
               <p className="text-gray-500 mt-3 max-w-2xl">
@@ -1248,17 +1363,23 @@ function ContestHub({ onBack, onSolve }) {
               ))}
             </div>
 
-            {selectedContest.status === "upcoming" && (
-              <p className="text-sm text-gray-500 mt-4">
-                Problems unlock when the contest starts.
-              </p>
-            )}
+            {liveStatus === "upcoming" && (
+  <p className="text-sm text-gray-500 mt-4">
+    Problems unlock when the contest starts.
+  </p>
+)}
 
-            {selectedContest.status === "running" && !selectedContest.joined && (
-              <p className="text-sm text-amber-400 mt-4">
-                Join the contest to solve problems.
-              </p>
-            )}
+{liveStatus === "running" && !selectedContest.joined && (
+  <p className="text-sm text-amber-400 mt-4">
+    Join the contest to solve problems.
+  </p>
+)}
+
+{liveStatus === "running" && selectedContest.status === "upcoming" && (
+  <p className="text-sm text-cyan-400 mt-4">
+    Contest has started. Click Refresh Leaderboard / Reload Contest to unlock real problems.
+  </p>
+)}
           </div>
 
           <div>
@@ -1349,6 +1470,11 @@ function ContestHub({ onBack, onSolve }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {contests.map((contest) => (
+            (() => {
+  const liveStatus = getLiveContestStatus(contest, now);
+  const timeInfo = getContestTimeLabel(contest, now);
+
+  return (
             <div
               key={contest._id}
               className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-amber-500/30 transition-all"
@@ -1360,14 +1486,14 @@ function ContestHub({ onBack, onSolve }) {
 
                 <span
                   className={`text-xs font-mono px-3 py-1 rounded-full ${
-                    contest.status === "running"
+                    liveStatus === "running"
                       ? "bg-emerald-500/10 text-emerald-400"
-                      : contest.status === "upcoming"
+                      : liveStatus === "upcoming"
                       ? "bg-amber-500/10 text-amber-400"
                       : "bg-gray-500/10 text-gray-400"
                   }`}
                 >
-                  {contest.status}
+                  {liveStatus}
                 </span>
               </div>
 
@@ -1375,15 +1501,36 @@ function ContestHub({ onBack, onSolve }) {
                 Participants: {contest.participantCount}
               </p>
 
+              <div className="grid grid-cols-2 gap-3 mb-4">
+  <div className="bg-black/30 border border-white/10 rounded-xl p-3">
+    <div className="text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-1">
+      Duration
+    </div>
+    <div className="text-white font-mono font-bold">
+      {formatDuration(contest.startTime, contest.endTime)}
+    </div>
+  </div>
+
+  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+    <div className="text-[10px] uppercase tracking-widest font-mono text-amber-500/70 mb-1">
+      {timeInfo.label}
+    </div>
+    <div className="text-amber-400 font-mono font-black">
+      {timeInfo.value}
+    </div>
+  </div>
+</div>
+
               <button
                 onClick={() => fetchContestDetails(contest._id)}
                 className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-mono text-sm"
               >
                 View Contest
               </button>
-            </div>
-          ))}
-
+           </div>
+  );
+})()
+))}
           {contests.length === 0 && (
             <div className="text-gray-500 font-mono">No contests found.</div>
           )}
