@@ -21,6 +21,7 @@ import {
   Users,
   Calendar,
   X,
+  Briefcase
 } from "lucide-react";
 
 import Login from "./Login";
@@ -28,6 +29,7 @@ import Register from "./Register";
 import AdminDashboard from "./AdminDashboard";
 import InterviewRoom from "./pages/InterviewRoom";
 import AdminContestManager from "./AdminContestManager";
+import JobDashboard from "./pages/Dashboard";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -40,6 +42,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAdminView, setIsAdminView] = useState(false);
   const [isContestView, setIsContestView] = useState(false);
+  const [isJobsView, setIsJobsView] = useState(false);
   const [contestWorkspace, setContestWorkspace] = useState(null);
   const [adminSection, setAdminSection] = useState("problems");
   
@@ -92,6 +95,7 @@ export default function App() {
       localStorage.removeItem("automata_user");
       setSelectedProblemId(null);
       setIsAdminView(false);
+      setIsJobsView(false);
       setProblems([]);
     }
   };
@@ -173,81 +177,93 @@ export default function App() {
                         onRegister={handleAuthSuccess}
                       />
                     )
+                 ) : isJobsView ? (
+                  <div key="job-dashboard" className="relative w-full h-[calc(100vh-48px)] overflow-y-auto custom-scrollbar">
+                    <button
+                      onClick={() => setIsJobsView(false)}
+                      className="absolute top-6 left-6 z-[100] flex items-center justify-center p-2 bg-black/50 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all border border-white/10 backdrop-blur-md"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <JobDashboard />
+                  </div>
                  ) : contestWorkspace ? (
-  <Workspace
-    key="contest-workspace"
-    problemId={contestWorkspace.problemId}
-    contestId={contestWorkspace.contestId}
-    onBack={() => setContestWorkspace(null)}
-    user={user}
-  />
-) : isContestView ? (
-  <ContestHub
-    key="contest-hub"
-    onBack={() => setIsContestView(false)}
-    onSolve={(contestId, problemId) =>
-      setContestWorkspace({ contestId, problemId })
-    }
-  />
-) : isAdminView ? (
-  <div key="admin-panel" className="relative">
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex gap-2 bg-black/80 border border-white/10 rounded-xl p-2 backdrop-blur-xl">
-      <button
-        onClick={() => setAdminSection("problems")}
-        className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
-          adminSection === "problems"
-            ? "bg-cyan-500 text-black"
-            : "bg-white/5 text-gray-400 hover:text-white"
-        }`}
-      >
-        QUESTIONS
-      </button>
+                  <Workspace
+                    key="contest-workspace"
+                    problemId={contestWorkspace.problemId}
+                    contestId={contestWorkspace.contestId}
+                    onBack={() => setContestWorkspace(null)}
+                    user={user}
+                  />
+                ) : isContestView ? (
+                  <ContestHub
+                    key="contest-hub"
+                    onBack={() => setIsContestView(false)}
+                    onSolve={(contestId, problemId) =>
+                      setContestWorkspace({ contestId, problemId })
+                    }
+                  />
+                ) : isAdminView ? (
+                  <div key="admin-panel" className="relative">
+                    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex gap-2 bg-black/80 border border-white/10 rounded-xl p-2 backdrop-blur-xl">
+                      <button
+                        onClick={() => setAdminSection("problems")}
+                        className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+                          adminSection === "problems"
+                            ? "bg-cyan-500 text-black"
+                            : "bg-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        QUESTIONS
+                      </button>
 
-      <button
-        onClick={() => setAdminSection("contests")}
-        className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
-          adminSection === "contests"
-            ? "bg-amber-500 text-black"
-            : "bg-white/5 text-gray-400 hover:text-white"
-        }`}
-      >
-        CONTESTS
-      </button>
-    </div>
+                      <button
+                        onClick={() => setAdminSection("contests")}
+                        className={`px-5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+                          adminSection === "contests"
+                            ? "bg-amber-500 text-black"
+                            : "bg-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        CONTESTS
+                      </button>
+                    </div>
 
-    {adminSection === "problems" ? (
-      <AdminDashboard
-        user={user}
-        onBack={() => setIsAdminView(false)}
-      />
-    ) : (
-      <AdminContestManager
-        onBack={() => setIsAdminView(false)}
-      />
-    )}
-  </div>
-) : !selectedProblemId ? (
-  <Dashboard
-    key="dashboard"
-    onSelect={(id) => setSelectedProblemId(id)}
-    problems={problems}
-    isLoading={isLoading}
-    user={user}
-    onLogout={handleLogout}
-onToggleAdmin={() => {
-  setAdminSection("problems");
-  setIsAdminView(true);
-}}    onBookInterview={handleBookInterview}
-    onOpenContests={() => setIsContestView(true)}
-  />
-) : (
-  <Workspace
-    key="workspace"
-    problemId={selectedProblemId}
-    onBack={() => setSelectedProblemId(null)}
-    user={user}
-  />
-)}
+                    {adminSection === "problems" ? (
+                      <AdminDashboard
+                        user={user}
+                        onBack={() => setIsAdminView(false)}
+                      />
+                    ) : (
+                      <AdminContestManager
+                        onBack={() => setIsAdminView(false)}
+                      />
+                    )}
+                  </div>
+                ) : !selectedProblemId ? (
+                  <Dashboard
+                    key="dashboard"
+                    onSelect={(id) => setSelectedProblemId(id)}
+                    problems={problems}
+                    isLoading={isLoading}
+                    user={user}
+                    onLogout={handleLogout}
+                    onToggleAdmin={() => {
+                      setAdminSection("problems");
+                      setIsAdminView(true);
+                    }}
+                    onBookInterview={handleBookInterview}
+                    onOpenContests={() => setIsContestView(true)}
+                    onOpenJobs={() => setIsJobsView(true)}
+                  />
+                ) : (
+                  <Workspace
+                    key="workspace"
+                    problemId={selectedProblemId}
+                    onBack={() => setSelectedProblemId(null)}
+                    user={user}
+                  />
+                )}
                 </AnimatePresence>
               }
             />
@@ -283,8 +299,6 @@ function SchedulingModal({ onClose, onConfirm }) {
   const getDefaultDateTimeValue = () => {
     const now = new Date();
 
-    // Default to 6 minutes from now.
-    // Interview room unlocks 5 minutes before start, so 6 minutes is perfect for testing.
     now.setMinutes(now.getMinutes() + 6);
     now.setSeconds(0, 0);
 
@@ -450,6 +464,7 @@ function Dashboard({
   onToggleAdmin,
   onBookInterview,
   onOpenContests,
+  onOpenJobs,
 }) {
   const [isScheduling, setIsScheduling] = useState(false);
 
@@ -508,13 +523,23 @@ function Dashboard({
 
           <div className="flex items-center space-x-4">
             {!isAdmin && (
-              <button
-                onClick={() => setIsScheduling(true)}
-                className="flex items-center space-x-2 text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors px-4 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.1)]"
-              >
-                <Users size={14} />
-                <span>FIND PEER</span>
-              </button>
+              <>
+                <button
+                  onClick={onOpenJobs}
+                  className="flex items-center space-x-2 text-xs font-mono text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                >
+                  <Briefcase size={14} />
+                  <span>MATCH ENGINE</span>
+                </button>
+                
+                <button
+                  onClick={() => setIsScheduling(true)}
+                  className="flex items-center space-x-2 text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors px-4 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.1)]"
+                >
+                  <Users size={14} />
+                  <span>FIND PEER</span>
+                </button>
+              </>
             )}
 
             {isAdmin && (
@@ -528,12 +553,12 @@ function Dashboard({
             )}
 
             <button
-  onClick={onOpenContests}
-  className="flex items-center space-x-2 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20"
->
-  <Trophy size={14} />
-  <span>CONTESTS</span>
-</button>
+              onClick={onOpenContests}
+              className="flex items-center space-x-2 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20"
+            >
+              <Trophy size={14} />
+              <span>CONTESTS</span>
+            </button>
 
             <button
               onClick={onLogout}
@@ -648,7 +673,8 @@ function Dashboard({
   );
 }
 
-function Workspace({ problemId, onBack, user, contestId = null }) {  const [problem, setProblem] = useState(null);
+function Workspace({ problemId, onBack, user, contestId = null }) {  
+  const [problem, setProblem] = useState(null);
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
   const [status, setStatus] = useState("idle");

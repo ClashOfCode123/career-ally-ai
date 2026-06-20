@@ -1,6 +1,6 @@
-
 import dns from "dns";
-dns.setServers(["1.1.1.1", "8.8.8.8"]);import cors from 'cors';
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+import cors from 'cors';
 import 'dotenv/config';
 import express from 'express';
 import http from "http";
@@ -20,6 +20,7 @@ import { Problem } from "./src/models/Problem.js";
 import { Contest } from "./src/models/Contest.js";
 import contestRoutes from "./src/routes/contestRoutes.js";
 import { connectRedis, redisClient } from "./src/config/redis.js";
+import jobRoutes from './src/routes/jobRoutes.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -84,7 +85,7 @@ io.on("connection", (socket) => {
     console.log("Socket disconnected:", socket.id);
   });
 });
- 
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -95,6 +96,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/problems', problemRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use("/api/contests", contestRoutes);
+app.use('/api/jobs', jobRoutes);
 
 app.post("/api/submit", protect, async (req, res) => {
   try {
@@ -243,9 +245,11 @@ const startServer = async () => {
     }
 
     startWorker();
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});  } catch (error) {
+    
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });  
+  } catch (error) {
     console.error("Initialization failed:", error);
     process.exit(1);
   }
