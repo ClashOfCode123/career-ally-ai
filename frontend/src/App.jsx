@@ -45,6 +45,43 @@ export default function App() {
   const [isJobsView, setIsJobsView] = useState(false);
   const [contestWorkspace, setContestWorkspace] = useState(null);
   const [adminSection, setAdminSection] = useState("problems");
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById("root");
+
+    const previous = {
+      htmlHeight: html.style.height,
+      bodyHeight: body.style.height,
+      rootHeight: root?.style.height || "",
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+      bodyMargin: body.style.margin,
+    };
+
+    html.style.height = "100%";
+    body.style.height = "100%";
+    body.style.margin = "0";
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    if (root) root.style.height = "100%";
+
+    window.scrollTo(0, 0);
+
+    return () => {
+      html.style.height = previous.htmlHeight;
+      body.style.height = previous.bodyHeight;
+      if (root) root.style.height = previous.rootHeight;
+      html.style.overflow = previous.htmlOverflow;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.margin = previous.bodyMargin;
+    };
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [isJobsView, isAdminView, isContestView, selectedProblemId, contestWorkspace]);
   
   useEffect(() => {
     const storedUser = localStorage.getItem("automata_user");
@@ -121,7 +158,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#050505] text-white font-sans overflow-hidden selection:bg-emerald-500/30 relative flex flex-col">
+      <div className="fixed inset-0 bg-[#050505] text-white font-sans overflow-hidden selection:bg-emerald-500/30 flex flex-col">
         <div
           className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/10 blur-[150px] rounded-full pointer-events-none animate-pulse"
           style={{ animationDuration: "8s" }}
@@ -134,7 +171,7 @@ export default function App() {
 
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
 
-        <div className="flex-1 relative z-10">
+        <div className="flex-1 min-h-0 relative z-10 overflow-hidden">
           <Routes>
             <Route
               path="/room/:roomId"
@@ -150,7 +187,7 @@ export default function App() {
                     <Register
                       key="register"
                       setAuthView={setAuthView}
-                      onRegister={handleAuthSuccess}
+                      onLogin={handleAuthSuccess}
                     />
                   )
                 ) : (
@@ -174,18 +211,18 @@ export default function App() {
                       <Register
                         key="register"
                         setAuthView={setAuthView}
-                        onRegister={handleAuthSuccess}
+                        onLogin={handleAuthSuccess}
                       />
                     )
                  ) : isJobsView ? (
-                  <div key="job-dashboard" className="relative w-full h-[calc(100vh-48px)] overflow-y-auto custom-scrollbar">
+                  <div key="job-dashboard" className="relative w-full h-full min-h-0 overflow-hidden">
                     <button
                       onClick={() => setIsJobsView(false)}
                       className="absolute top-6 left-6 z-[100] flex items-center justify-center p-2 bg-black/50 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all border border-white/10 backdrop-blur-md"
                     >
                       <ArrowLeft size={18} />
                     </button>
-                    <JobDashboard />
+                    <JobDashboard user={user} apiBaseUrl={API_BASE_URL} />
                   </div>
                  ) : contestWorkspace ? (
                   <Workspace
@@ -204,7 +241,7 @@ export default function App() {
                     }
                   />
                 ) : isAdminView ? (
-                  <div key="admin-panel" className="relative">
+                  <div key="admin-panel" className="relative h-full min-h-0 overflow-hidden">
                     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex gap-2 bg-black/80 border border-white/10 rounded-xl p-2 backdrop-blur-xl">
                       <button
                         onClick={() => setAdminSection("problems")}
@@ -274,9 +311,9 @@ export default function App() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}
-          className="relative z-50 border-t border-white/5 bg-[#050505]/80 backdrop-blur-xl"
+          className="relative z-50 h-12 shrink-0 border-t border-white/5 bg-[#050505]/80 backdrop-blur-xl"
         >
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between text-xs font-mono tracking-widest text-gray-500">
+          <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between text-xs font-mono tracking-widest text-gray-500">
             <div className="flex items-center space-x-2">
               <Activity size={14} className="text-emerald-500" />
               <span>AUTOMATA RCE ENGINE v2.0</span>

@@ -21,6 +21,7 @@ import { Contest } from "./src/models/Contest.js";
 import contestRoutes from "./src/routes/contestRoutes.js";
 import { connectRedis, redisClient } from "./src/config/redis.js";
 import jobRoutes from './src/routes/jobRoutes.js';
+import resumeChatRoutes from './src/routes/resumeChatRoutes.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -97,6 +98,7 @@ app.use('/api/problems', problemRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use("/api/contests", contestRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/resume-chat', resumeChatRoutes);
 
 app.post("/api/submit", protect, async (req, res) => {
   try {

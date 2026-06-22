@@ -3,6 +3,8 @@ import { parseResume } from '../services/resumeParserService.js';
 import { fetchAndIngestJobs } from '../services/jobFetchService.js';
 import JobMatch from '../models/JobMatch.js';
 import GlobalJob from '../models/GlobalJob.js';
+import ResumeProfile from '../models/ResumeProfile.js';
+import ChatSession from '../models/ChatSession.js';
 
 function generateCacheKey(apiParams) {
   const sortedParams = Object.keys(apiParams)
@@ -44,10 +46,43 @@ async function uploadAndMatch(req, res) {
     const userId = req.user._id;
 
     const querySignature = await parseResume(req.file.buffer, yoe, targetCompanies);
+
+
     
     const finalPreferredRole = jobType || querySignature.preferredRole || 'full-time';
-    querySignature.preferredRole = finalPreferredRole;
-    querySignature.country = country || 'us';
+querySignature.preferredRole = finalPreferredRole;
+querySignature.country = country || 'us';
+
+await ResumeProfile.findOneAndUpdate(
+  { userId },
+  {
+    $set: {
+      userId,
+      rawResumeText: querySignature.rawResumeText || '',
+      skills: querySignature.skills || [],
+      yoe: querySignature.yoe || 0,
+      batchYear: querySignature.batchYear || 0,
+      preferredRole: querySignature.preferredRole || 'full-time',
+      country: querySignature.country || 'us',
+      targetCompanies: querySignature.targetCompanies || [],
+      careerSummary: querySignature.careerSummary || '',
+      strengths: querySignature.strengths || [],
+      weaknesses: querySignature.weaknesses || [],
+      suggestedRoles: querySignature.suggestedRoles || []
+    }
+  },
+  {
+    upsert: true,
+    new: true,
+    setDefaultsOnInsert: true
+  }
+);
+
+// New resume means old chat memory may be outdated.
+await ChatSession.updateMany(
+  { userId, isActive: true },
+  { $set: { isActive: false } }
+);
 
     const apiQueryString = `BroadSearch_${finalPreferredRole}`;
     const apiParams = {
