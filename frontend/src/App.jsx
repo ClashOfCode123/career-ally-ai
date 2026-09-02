@@ -31,8 +31,7 @@ import InterviewRoom from "./pages/InterviewRoom";
 import AdminContestManager from "./AdminContestManager";
 import JobDashboard from "./pages/Dashboard";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
+const API_BASE_URL = "http://152.70.67.89:3000";
 export default function App() {
   const [user, setUser] = useState(null);
   const [authView, setAuthView] = useState("login");
