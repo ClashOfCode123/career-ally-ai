@@ -18,7 +18,7 @@ export default function Register({ setAuthView, onRegister }) {
     setError("");
     try {
       const res = await axios.post(
-        "${API_BASE_URL}/api/auth/register",
+        `${API_BASE_URL}/api/auth/register`,
         { username, email, password },
         { withCredentials: true }
       );

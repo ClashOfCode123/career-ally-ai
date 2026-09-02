@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { Code, Users, Terminal, CheckCircle2 } from "lucide-react";
 
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 export default function CollaborativeDoc({ roomId }) {
   const [text, setText] = useState("");
   const [connectedUsers, setConnectedUsers] = useState(1);
@@ -12,7 +14,7 @@ export default function CollaborativeDoc({ roomId }) {
 
   useEffect(() => {
     // Initialize secure socket connection to your backend server
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io(`${API_BASE_URL}/`, {
   transports: ["websocket"],
   withCredentials: true,
 });
