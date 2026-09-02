@@ -26,7 +26,7 @@ import {
 
 import Login from "./Login";
 import Register from "./Register";
-import AdminDashboard from "./AdminDashboard";
+import AdminDashboard from "./AdminDashBoard";
 import InterviewRoom from "./pages/InterviewRoom";
 import AdminContestManager from "./AdminContestManager";
 import JobDashboard from "./pages/Dashboard";
