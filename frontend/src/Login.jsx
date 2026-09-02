@@ -15,7 +15,7 @@ export default function Login({ setAuthView, onLogin }) {
     setError("");
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/auth/login",
+        "${API_BASE_URL}/api/auth/login",
         { email, password },
         { withCredentials: true }
       );
