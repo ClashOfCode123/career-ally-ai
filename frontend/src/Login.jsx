@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Activity, Mail, Lock, LogIn, ArrowRight } from "lucide-react";
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 export default function Login({ setAuthView, onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
