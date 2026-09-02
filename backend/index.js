@@ -26,9 +26,14 @@ import resumeChatRoutes from './src/routes/resumeChatRoutes.js';
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://career-ally-ai2.vercel.app"
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST"],
   },
@@ -91,7 +96,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/problems', problemRoutes);
