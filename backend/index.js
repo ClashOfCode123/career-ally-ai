@@ -26,17 +26,31 @@ import resumeChatRoutes from './src/routes/resumeChatRoutes.js';
 const app = express();
 const server = http.createServer(app);
 
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://career-ally-ai2.vercel.app"
 ];
 
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST"],
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow if it's in the array, OR if it's any vercel preview URL, OR if there's no origin (like Postman)
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"]
+};
+
+// 1. Apply CORS to Express (Crucial for Axios /api/auth requests)
+app.use(cors(corsOptions));
+
+// 2. Apply CORS to Socket.IO (Crucial for live collaboration)
+const io = new Server(server, {
+  cors: corsOptions
 });
 
 const roomDocuments = new Map();
