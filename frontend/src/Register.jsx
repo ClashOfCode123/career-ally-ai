@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, User, Mail, Lock, UserPlus, ArrowLeft } from "lucide-react";
+import { Activity, User, Mail, Lock, UserPlus, ArrowLeft, CheckCircle2 } from "lucide-react";
 import axios from "axios";
 
 const API_BASE_URL = "https://152.70.67.89.nip.io";
@@ -10,12 +10,14 @@ export default function Register({ setAuthView, onRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(""); // Added success state
   const [isLoading, setIsLoading] = useState(false);
 
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccess("");
     try {
       const res = await axios.post(
         `${API_BASE_URL}/api/auth/register`,
@@ -23,15 +25,18 @@ export default function Register({ setAuthView, onRegister }) {
         { withCredentials: true }
       );
       
-      // Separate the callback so local UI errors don't mask server success
-      try {
-        onRegister(res.data);
-      } catch (callbackErr) {
-        console.error("Error inside onRegister callback:", callbackErr);
-      }
+      // Display success message and delay transition slightly so the user sees it
+      setSuccess("Registration successful! Initializing session...");
+      setTimeout(() => {
+        try {
+          onRegister(res.data);
+        } catch (callbackErr) {
+          console.error("Error inside onRegister callback:", callbackErr);
+        }
+      }, 1000);
+
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -60,6 +65,13 @@ export default function Register({ setAuthView, onRegister }) {
         {error && (
           <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm text-center">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm text-center flex items-center justify-center space-x-2">
+            <CheckCircle2 size={18} />
+            <span>{success}</span>
           </div>
         )}
 
@@ -112,7 +124,7 @@ export default function Register({ setAuthView, onRegister }) {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={isLoading}
+            disabled={isLoading || success}
             className="w-full flex items-center justify-center space-x-2 py-3 mt-6 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-black font-bold transition-all shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50"
           >
             {isLoading ? (
