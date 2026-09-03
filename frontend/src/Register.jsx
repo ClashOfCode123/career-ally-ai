@@ -12,7 +12,7 @@ export default function Register({ setAuthView, onRegister }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -22,7 +22,13 @@ export default function Register({ setAuthView, onRegister }) {
         { username, email, password },
         { withCredentials: true }
       );
-      onRegister(res.data);
+      
+      // Separate the callback so local UI errors don't mask server success
+      try {
+        onRegister(res.data);
+      } catch (callbackErr) {
+        console.error("Error inside onRegister callback:", callbackErr);
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
     } finally {
