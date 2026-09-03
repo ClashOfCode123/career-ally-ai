@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { Code, Users, Terminal, CheckCircle2 } from "lucide-react";
 
 
-const API_BASE_URL = "http://152.70.67.89:3000";
+const API_BASE_URL = "https://152.70.67.89.nip.io";
 
 export default function CollaborativeDoc({ roomId }) {
   const [text, setText] = useState("");

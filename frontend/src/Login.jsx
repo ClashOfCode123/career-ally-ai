@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Activity, Mail, Lock, LogIn, ArrowRight } from "lucide-react";
 import axios from "axios";
 
-const API_BASE_URL = "http://152.70.67.89:3000";
+const API_BASE_URL = "https://152.70.67.89.nip.io";
+
 export default function Login({ setAuthView, onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
